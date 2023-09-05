@@ -1,0 +1,33 @@
+# https://dev.to/s1ntaxe770r/how-to-setup-ssh-within-a-docker-container-i5i
+# FROM ubuntu:22.10
+
+# RUN apt update && apt install openssh-server sudo -y
+
+# RUN useradd -rm -d /home/ubuntu -s /bin/bash -g root -G sudo -u 1000 test 
+
+# RUN  echo 'test:test' | chpasswd
+
+# RUN service ssh start
+
+# CMD ["/usr/sbin/sshd","-D"]
+
+FROM ubuntu:22.10
+
+RUN apt update && apt install openssh-server sudo inetutils-ping -y
+# RUN sudo ufw allow 22
+RUN service ssh start
+
+# Create user
+RUN useradd -rm -d /home/ansible -s /bin/bash -g root -G sudo -u 1000 ansible
+COPY ./dockerfiles/config/sudoers /etc/sudoers
+RUN  echo 'ansible:ansible' | chpasswd
+USER ansible
+
+# Configure ansible SSH
+RUN mkdir /home/ansible/.ssh
+COPY ./dockerfiles/.ssh/authorized_keys /home/ansible/.ssh/authorized_keys
+
+EXPOSE 22
+
+# CMD ["sudo", "/usr/sbin/sshd","-D"]
+ENTRYPOINT sudo service ssh restart && /bin/bash

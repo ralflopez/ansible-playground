@@ -1,0 +1,15 @@
+services:
+  controller:
+    container_name: ansible_controller
+    command: ["/bin/bash"]
+    build:
+      context: .
+      dockerfile: dockerfiles/AnsibleController
+  host1:
+    container_name: ansible_host1
+    command: ["/bin/bash"]
+    build:
+      context: .
+      dockerfile: dockerfiles/AnsibleUbuntuHost
+    volumes:
+      - ./volumes/ansible-controller/home/ansible:/home/ansible/

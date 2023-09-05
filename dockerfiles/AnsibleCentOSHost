@@ -1,0 +1,32 @@
+# https://hub.docker.com/_/centos/
+FROM centos:7
+ENV container docker
+RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
+    systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+    rm -f /lib/systemd/system/multi-user.target.wants/*;\
+    rm -f /etc/systemd/system/*.wants/*;\
+    rm -f /lib/systemd/system/local-fs.target.wants/*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+    rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+    rm -f /lib/systemd/system/basic.target.wants/*;\
+    rm -f /lib/systemd/system/anaconda.target.wants/*;
+
+# https://medium.com/@vabhinav991222/configuring-ssh-in-a-docker-centos-container-249b0060a5ad
+RUN yum -y update
+RUN yum install -y openssh-server openssh-clients sudo
+RUN ufw allow 22
+
+RUN sed -i 's/#PermitRootLogin yes/PermitRootLogin yes/g' /etc/ssh/sshd_config
+RUN ssh-keygen -A
+RUN /usr/sbin/sshd
+
+# Create user
+RUN useradd -rm -d /home/ansible -s /bin/bash -g root -G sudo -u 1000 ansible
+COPY ./dockerfiles/config/sudoers /etc/sudoers
+RUN  echo 'ansible:ansible' | chpasswd
+USER ansible
+
+EXPOSE 22
+
+VOLUME [ "/sys/fs/cgroup" ]
+CMD ["/usr/sbin/init"]

@@ -1,0 +1,32 @@
+FROM ubuntu:22.10
+
+# Install system packages
+RUN apt update && apt install openssh-server sudo inetutils-ping -y
+
+# Configure SSH
+# generate server keys
+RUN ssh-keygen -A
+# allow root to login
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
+RUN service ssh start
+
+# Create user
+RUN useradd -rm -d /home/ansible -s /bin/bash -g root -G sudo -u 1000 ansible
+COPY ./dockerfiles/config/sudoers /etc/sudoers
+RUN  echo 'ansible:ansible' | chpasswd
+USER ansible
+
+# Install ansible
+RUN sudo apt install python3-pip python3.10-venv -y
+RUN python3 -m pip install --user ansible
+ENV PATH="$PATH:/home/ansible/.local/bin"
+
+# Configure ansible SSH
+RUN mkdir /home/ansible/.ssh
+COPY ./dockerfiles/.ssh/id_ansible /home/ansible/.ssh/id_ansible
+COPY ./dockerfiles/.ssh/id_ansible.pub /home/ansible/.ssh/id_ansible.pub
+
+EXPOSE 22
+
+# CMD ["/usr/sbin/sshd","-D"]
+ENTRYPOINT sudo service ssh restart && /bin/bash
